@@ -144,6 +144,11 @@ async function startBootSequence() {
   // Add click/tap handler for skipping
   document.addEventListener('click', skipToNext);
   document.addEventListener('touchstart', skipToNext);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+      skipToNext();
+    }
+  });
   
   // Start typing with initial delay
   setTimeout(typeLine, 1000);
