@@ -42,45 +42,9 @@ let index = 0;
 let skipRequested = false;
 
 // Configure audio
-audio.volume = 0.8;  // Set volume to 80%
-
-// Function to ensure audio plays (handles autoplay restrictions)
-async function ensureAudioPlays() {
-  try {
-    await audio.play();
-  } catch (err) {
-    console.log("Audio autoplay failed, waiting for user interaction");
-    // Add a play button if autoplay fails
-    const playButton = document.createElement("button");
-    playButton.innerHTML = "▶ Begin Memory Sequence";
-    playButton.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: transparent;
-      color: #00ffcc;
-      border: 1px solid #00ffcc;
-      padding: 15px 30px;
-      cursor: pointer;
-      font-family: 'PerfectDOSVGA', monospace;
-      text-shadow: 0 0 5px #00ffcc;
-      z-index: 1000;
-    `;
-    document.body.appendChild(playButton);
-    
-    playButton.onclick = async () => {
-      await audio.play();
-      playButton.remove();
-      startBootSequence();
-    };
-    return false;
-  }
-  return true;
-}
+audio.volume = 0.8;
 
 function getRandomDelay() {
-  // Random delay between 600ms and 1400ms for slower typing
   return Math.floor(Math.random() * 800) + 600;
 }
 
@@ -97,7 +61,6 @@ function skipToNext() {
       } else {
         clearInterval(fadeAudio);
         audio.pause();
-        // Ensure we're using the correct path for the game
         window.location.href = './lucid_dream.html';
       }
     }, 50);
@@ -145,6 +108,12 @@ async function startBootSequence() {
   audio.currentTime = 0;
   audio.volume = 0.8;
   
+  try {
+    await audio.play();
+  } catch (err) {
+    console.log("Audio autoplay failed, waiting for user interaction");
+  }
+  
   // Add event listeners for skipping
   skipButton.addEventListener('click', skipToNext);
   document.addEventListener('click', skipToNext);
@@ -159,10 +128,5 @@ async function startBootSequence() {
   setTimeout(typeLine, 1000);
 }
 
-// Start everything when the page loads
-window.onload = async () => {
-  // Try to play audio and start sequence
-  if (await ensureAudioPlays()) {
-    startBootSequence();
-  }
-};
+// Start the boot sequence when the page loads
+window.onload = startBootSequence;
