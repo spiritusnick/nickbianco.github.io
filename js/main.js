@@ -1,5 +1,6 @@
 const terminal = document.getElementById("terminal");
 const audio = document.getElementById("bootAudio");
+const skipButton = document.getElementById("skipButton");
 
 const bootLines = [
   "Booting node nick_v33.1.3…",
@@ -87,6 +88,7 @@ function skipToNext() {
   if (!skipRequested) {
     skipRequested = true;
     terminal.innerHTML += "\n>> SKIP REQUESTED...\n";
+    skipButton.style.display = 'none';
     
     // Fade out audio
     const fadeAudio = setInterval(() => {
@@ -95,7 +97,8 @@ function skipToNext() {
       } else {
         clearInterval(fadeAudio);
         audio.pause();
-        window.location.href = 'lucid_dream.html';
+        // Ensure we're using the correct path for the game
+        window.location.href = './lucid_dream.html';
       }
     }, 50);
   }
@@ -124,7 +127,7 @@ function typeLine() {
         } else {
           clearInterval(fadeAudio);
           audio.pause();
-          window.location.href = 'lucid_dream.html';
+          window.location.href = './lucid_dream.html';
         }
       }, 100);
     }, 5000);
@@ -136,12 +139,14 @@ async function startBootSequence() {
   terminal.innerHTML = "";
   index = 0;
   skipRequested = false;
+  skipButton.style.display = 'block';
   
   // Ensure audio is at the beginning
   audio.currentTime = 0;
   audio.volume = 0.8;
   
-  // Add click/tap handler for skipping
+  // Add event listeners for skipping
+  skipButton.addEventListener('click', skipToNext);
   document.addEventListener('click', skipToNext);
   document.addEventListener('touchstart', skipToNext);
   document.addEventListener('keydown', (e) => {

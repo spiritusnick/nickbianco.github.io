@@ -11,13 +11,34 @@
       font-family: 'PerfectDOSVGA';
       src: url('fonts/PerfectDOSVGA.ttf') format('truetype');
     }
+    .skip-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: transparent;
+      color: #00ffcc;
+      border: 1px solid #00ffcc;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: 'PerfectDOSVGA', monospace;
+      text-shadow: 0 0 5px #00ffcc;
+      z-index: 1000;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+
+    .skip-button:hover {
+      opacity: 1;
+      background: rgba(0, 255, 204, 0.1);
+    }
   </style>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="crt">
-    <pre id="terminal"></pre>
-    <audio id="bootAudio" src="assets/audio/bootsequence.mp3" autoplay></audio>
+    <div id="terminal"></div>
+    <audio id="bootAudio" src="assets/audio/boot_sequence.mp3" loop></audio>
+    <div id="skipButton" class="skip-button">SKIP SEQUENCE</div>
   </div>
   <script src="js/main.js"></script>
 </body>
