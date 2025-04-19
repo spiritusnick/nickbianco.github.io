@@ -1,0 +1,32 @@
+body {
+    background: black;
+    color: #00ffcc;
+    font-family: 'PerfectDOSVGA', monospace;
+    font-size: 1.2rem;
+    overflow: hidden;
+  }
+  
+  .crt {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    padding: 2rem;
+    text-shadow: 0 0 5px #00ffcc;
+    background: radial-gradient(ellipse at center, #000 0%, #111 100%);
+    animation: flicker 1s infinite alternate;
+  }
+  
+  @keyframes flicker {
+    0% { opacity: 1; }
+    100% { opacity: 0.98; transform: scale(1.002); }
+  }
+  
+  #terminal::after {
+    content: "_";
+    animation: blink 1s infinite;
+  }
+  
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }

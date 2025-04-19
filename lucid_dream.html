@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>LUCID DREAM</title>
+  <style>
+    @font-face {
+      font-family: 'PerfectDOSVGA';
+      src: url('fonts/PerfectDOSVGA.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: 'PerfectDOSVGA', monospace;
+      overflow: hidden;
+      cursor: none;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #background-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 2s;
+      mix-blend-mode: screen;
+      filter: contrast(1.2) brightness(0.4) saturate(0.8);
+    }
+
+    #game-screen {
+      position: relative;
+      image-rendering: pixelated;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid white;
+      z-index: 2;
+    }
+
+    .status-bar {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: pre;
+      z-index: 3;
+      text-shadow: 2px 2px 0px black;
+    }
+
+    .instructions {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      text-align: center;
+      opacity: 0.7;
+      z-index: 3;
+      text-shadow: 2px 2px 0px black;
+    }
+
+    /* CRT effect */
+    #game-container::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .crt-flicker {
+      animation: flicker 0.15s infinite;
+      opacity: 0.9;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.9; }
+      50% { opacity: 0.95; }
+      100% { opacity: 0.9; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <video id="background-video" src="assets/videos/xmas01.mp4" loop muted></video>
+    <canvas id="game-screen"></canvas>
+    <div class="status-bar">LUCID DREAM v1.0
+DEPTH: <span id="depth">0</span>  STEPS: <span id="steps">0</span></div>
+    <div class="instructions">USE ARROW KEYS TO NAVIGATE THE DREAM</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game-screen');
+    const ctx = canvas.getContext('2d');
+    const depthDisplay = document.getElementById('depth');
+    const stepsDisplay = document.getElementById('steps');
+    const backgroundVideo = document.getElementById('background-video');
+
+    // Game constants
+    const CELL_SIZE = 20;
+    const MAZE_WIDTH = 31;
+    const MAZE_HEIGHT = 31;
+    const PLAYER_SIZE = CELL_SIZE - 4;
+    const MOVES_TO_START_VIDEO = 10;
+    
+    // Set canvas size
+    canvas.width = MAZE_WIDTH * CELL_SIZE;
+    canvas.height = MAZE_HEIGHT * CELL_SIZE;
+
+    // Game state
+    let playerX = 1;
+    let playerY = 1;
+    let steps = 0;
+    let depth = 1;
+    let maze = [];
+    let videoStarted = false;
+
+    // Generate maze using recursive backtracking
+    function generateMaze() {
+      // Initialize maze with walls
+      maze = Array(MAZE_HEIGHT).fill().map(() => Array(MAZE_WIDTH).fill(1));
+      
+      function carve(x, y) {
+        maze[y][x] = 0;
+        
+        // Directions: [dx, dy]
+        const directions = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+        shuffleArray(directions);
+        
+        for (let [dx, dy] of directions) {
+          const newX = x + dx;
+          const newY = y + dy;
+          
+          if (newX > 0 && newX < MAZE_WIDTH - 1 && newY > 0 && newY < MAZE_HEIGHT - 1 && maze[newY][newX] === 1) {
+            maze[y + dy/2][x + dx/2] = 0;
+            carve(newX, newY);
+          }
+        }
+      }
+      
+      carve(1, 1);
+      
+      // Create exit
+      maze[MAZE_HEIGHT - 2][MAZE_WIDTH - 2] = 0;
+      maze[MAZE_HEIGHT - 2][MAZE_WIDTH - 1] = 0;
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function drawMaze() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw maze
+      ctx.fillStyle = 'white';
+      for (let y = 0; y < MAZE_HEIGHT; y++) {
+        for (let x = 0; x < MAZE_WIDTH; x++) {
+          if (maze[y][x] === 1) {
+            ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+          }
+        }
+      }
+      
+      // Draw exit marker
+      ctx.fillStyle = '#666';
+      ctx.fillRect((MAZE_WIDTH - 1) * CELL_SIZE, (MAZE_HEIGHT - 2) * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      
+      // Draw player
+      ctx.fillStyle = 'white';
+      ctx.fillRect(
+        playerX * CELL_SIZE + (CELL_SIZE - PLAYER_SIZE) / 2,
+        playerY * CELL_SIZE + (CELL_SIZE - PLAYER_SIZE) / 2,
+        PLAYER_SIZE,
+        PLAYER_SIZE
+      );
+    }
+
+    function movePlayer(dx, dy) {
+      const newX = playerX + dx;
+      const newY = playerY + dy;
+      
+      if (newX >= 0 && newX < MAZE_WIDTH && newY >= 0 && newY < MAZE_HEIGHT && maze[newY][newX] === 0) {
+        playerX = newX;
+        playerY = newY;
+        steps++;
+        stepsDisplay.textContent = steps;
+
+        // Start video after MOVES_TO_START_VIDEO moves
+        if (steps === MOVES_TO_START_VIDEO) {
+          backgroundVideo.play();
+          backgroundVideo.style.opacity = 0.2;
+          videoStarted = true;
+        }
+
+        // Increase video visibility with depth
+        if (videoStarted) {
+          backgroundVideo.style.opacity = Math.min(0.2 + (depth * 0.15), 0.6);
+        }
+        
+        // Check if player reached the exit
+        if (playerX === MAZE_WIDTH - 1 && playerY === MAZE_HEIGHT - 2) {
+          setTimeout(() => {
+            if (depth < 3) {
+              depth++;
+              depthDisplay.textContent = depth;
+              resetLevel();
+            } else {
+              // Transition to video sequence
+              backgroundVideo.style.opacity = '1';
+              backgroundVideo.style.filter = 'contrast(1.2) brightness(1) saturate(1.2)';
+              canvas.style.opacity = '0';
+              document.querySelector('.status-bar').style.opacity = '0';
+              document.querySelector('.instructions').style.opacity = '0';
+              
+              setTimeout(() => {
+                window.location.href = 'scene1.html';
+              }, 3000);
+            }
+          }, 100);
+        }
+      }
+    }
+
+    function resetLevel() {
+      playerX = 1;
+      playerY = 1;
+      generateMaze();
+    }
+
+    // Initialize game
+    generateMaze();
+    drawMaze();
+    depthDisplay.textContent = depth;
+
+    // Handle keyboard input
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowUp':
+          movePlayer(0, -1);
+          break;
+        case 'ArrowDown':
+          movePlayer(0, 1);
+          break;
+        case 'ArrowLeft':
+          movePlayer(-1, 0);
+          break;
+        case 'ArrowRight':
+          movePlayer(1, 0);
+          break;
+      }
+      drawMaze();
+    });
+
+    // Add CRT flicker effect
+    setInterval(() => {
+      canvas.classList.toggle('crt-flicker');
+    }, 150);
+
+    // Game loop
+    function gameLoop() {
+      drawMaze();
+      requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+  </script>
+</body>
+</html> 

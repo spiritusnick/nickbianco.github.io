@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Node 02</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    video {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.2) brightness(0.8) saturate(1.2);
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+    .prompt {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #00ffcc;
+      font-family: 'PerfectDOSVGA', monospace;
+      text-shadow: 0 0 5px #00ffcc;
+      opacity: 0;
+      transition: opacity 1s;
+      z-index: 100;
+    }
+    .prompt.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <video id="memoryVideo" src="assets/videos/camera16.mp4" autoplay muted controls></video>
+    <canvas id="glitchCanvas"></canvas>
+    <div class="prompt" id="continuePrompt">Press any key to continue...</div>
+  </div>
+
+  <script>
+    const video = document.getElementById('memoryVideo');
+    const canvas = document.getElementById('glitchCanvas');
+    const ctx = canvas.getContext('2d');
+    const prompt = document.getElementById('continuePrompt');
+
+    // Set canvas size
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Glitch effect parameters
+    const glitchParams = {
+      frequency: 0.03,
+      intensity: 0.2,
+      scanlines: true,
+      rgbShift: true,
+    };
+
+    // Main animation loop
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (Math.random() < glitchParams.frequency) {
+        if (glitchParams.rgbShift) {
+          const shift = Math.random() * 10 * glitchParams.intensity;
+          ctx.fillStyle = 'rgba(255,0,0,0.5)';
+          ctx.fillRect(shift, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(0,255,0,0.5)';
+          ctx.fillRect(-shift, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(0,0,255,0.5)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        const numBlocks = Math.floor(Math.random() * 5) + 1;
+        for (let i = 0; i < numBlocks; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          const width = Math.random() * 100 + 50;
+          const height = Math.random() * 30 + 10;
+          ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.3})`;
+          ctx.fillRect(x, y, width, height);
+        }
+      }
+
+      if (glitchParams.scanlines) {
+        for (let i = 0; i < canvas.height; i += 2) {
+          ctx.fillStyle = 'rgba(0,0,0,0.1)';
+          ctx.fillRect(0, i, canvas.width, 1);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Show prompt when video ends
+    video.addEventListener('ended', () => {
+      prompt.classList.add('visible');
+    });
+
+    // Handle key press to continue
+    document.addEventListener('keydown', () => {
+      // Fade out current scene
+      document.body.style.opacity = '0';
+      document.body.style.transition = 'opacity 1s';
+      
+      // Redirect after fade
+      setTimeout(() => {
+        window.location.href = 'index.html'; // Loop back to start
+      }, 1000);
+    });
+
+    // Start animation when video plays
+    video.addEventListener('play', () => {
+      animate();
+    });
+
+    // Randomize glitch parameters periodically
+    setInterval(() => {
+      glitchParams.frequency = Math.random() * 0.05 + 0.01;
+      glitchParams.intensity = Math.random() * 0.3 + 0.1;
+    }, 5000);
+  </script>
+</body>
+</html> 
