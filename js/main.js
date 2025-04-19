@@ -38,6 +38,7 @@ const bootLines = [
 ];
 
 let index = 0;
+let skipRequested = false;
 
 // Configure audio
 audio.volume = 0.8;  // Set volume to 80%
@@ -82,8 +83,26 @@ function getRandomDelay() {
   return Math.floor(Math.random() * 800) + 600;
 }
 
+function skipToNext() {
+  if (!skipRequested) {
+    skipRequested = true;
+    terminal.innerHTML += "\n>> SKIP REQUESTED...\n";
+    
+    // Fade out audio
+    const fadeAudio = setInterval(() => {
+      if (audio.volume > 0.1) {
+        audio.volume -= 0.1;
+      } else {
+        clearInterval(fadeAudio);
+        audio.pause();
+        window.location.href = 'lucid_dream.html';
+      }
+    }, 50);
+  }
+}
+
 function typeLine() {
-  if (index < bootLines.length) {
+  if (index < bootLines.length && !skipRequested) {
     terminal.innerHTML += bootLines[index] + "\n";
     
     // Add longer pauses after certain dramatic lines
@@ -95,7 +114,7 @@ function typeLine() {
     
     index++;
     setTimeout(typeLine, delay);
-  } else {
+  } else if (!skipRequested) {
     // Longer pause before scene transition
     setTimeout(() => {
       // Fade out audio before transition
@@ -116,10 +135,15 @@ async function startBootSequence() {
   // Reset terminal
   terminal.innerHTML = "";
   index = 0;
+  skipRequested = false;
   
   // Ensure audio is at the beginning
   audio.currentTime = 0;
   audio.volume = 0.8;
+  
+  // Add click/tap handler for skipping
+  document.addEventListener('click', skipToNext);
+  document.addEventListener('touchstart', skipToNext);
   
   // Start typing with initial delay
   setTimeout(typeLine, 1000);
